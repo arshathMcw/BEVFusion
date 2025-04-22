@@ -46,44 +46,19 @@ For the past few years, point-level fusion has been the dominant approach, but B
 * The paper hopes that this work will establish BEVFusion as a strong baseline for future sensor fusion research and encourage researchers to rethink the design and approach for multi-task, multi-sensor fusion.
 
 ### Related Work
-LiDAR-Based 3D Perception:
-
-    Several researchers have developed single-stage 3D object detectors that flatten LiDAR point cloud features using methods like PointNets or SparseConvNet to perform detection in the BEV space.
-
-    Others have explored anchor-free single-stage 3D detection, as well as two-stage object detector designs, adding an RCNN network to enhance the performance of one-stage detectors.
-
-Camera-Based 3D Perception:
-
-    Due to the high cost of LiDAR, many researchers focus on camera-only 3D perception. One approach, FCOS3D, extends image detectors with 3D regression branches, and other studies have improved depth modeling.
-
-    Instead of detection in perspective view, some methods convert camera features into BEV using a view transformer, which has been explored in models like BEVDet and M2BEV.
-
-    Research on multi-head attention has also been applied to view transformation for 3D object detection.
-
-Multi-Sensor Fusion:
-
-    Multi-sensor fusion has become a prominent area in 3D detection. Approaches can be categorized into proposal-level and point-level fusion:
-
-    Proposal-level fusion focuses on creating object proposals in 3D and fusing image features with them. Examples include MV3D, FUTR3D, and TransFusion.
-
-    Point-level fusion typically involves mapping image semantic features onto LiDAR points to perform detection.
-
-    BEVFusion, however, performs fusion in a shared BEV space, treating both foreground/background and geometric/semantic information equally, offering a more generalized framework for multi-task, multi-sensor perception.
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-### methods
+1. LiDAR-Based 3D Perception:
+    * Several researchers have developed single-stage 3D object detectors that flatten LiDAR point cloud features using methods like PointNets or SparseConvNet to perform detection in the BEV space.
+    * Others have explored anchor-free single-stage 3D detection, as well as two-stage object detector designs, adding an RCNN network to enhance the performance of one-stage detectors.
+1. Camera-Based 3D Perception:
+    * Due to the high cost of LiDAR, many researchers focus on camera-only 3D perception. One approach, FCOS3D, extends image detectors with 3D regression branches, and other studies have improved depth modeling.
+    * Instead of detection in perspective view, some methods convert camera features into BEV using a view transformer, which has been explored in models like BEVDet and M2BEV.
+    * Research on multi-head attention has also been applied to view transformation for 3D object detection.
+1. Multi-Sensor Fusion:
+    * Multi-sensor fusion has become a prominent area in 3D detection. Approaches can be categorized into proposal-level and point-level fusion:
+    * Proposal-level fusion focuses on creating object proposals in 3D and fusing image features with them. Examples include MV3D, FUTR3D, and TransFusion.
+    * Point-level fusion typically involves mapping image semantic features onto LiDAR points to perform detection.
+    * BEVFusion, however, performs fusion in a shared BEV space, treating both foreground/background and geometric/semantic information equally, offering a more generalized framework for multi-task, multi-sensor perception.
+### Methods
 BEVFusion focuses on fusing data from multiple sensors—like LiDAR and multiple cameras—to handle multiple 3D perception tasks such as object detection and scene segmentation. It starts by using separate encoders for each type of input to extract their unique features. These features are then transformed into a shared BEV format that holds both geometric structure and semantic meaning. Since this transformation process is computationally heavy, it gets optimized through precomputation and interval reduction, making it much faster. After that, a convolution-based encoder is applied to refine the unified BEV features and correct any local misalignments between inputs. The final step adds task-specific components to perform different 3D perception tasks.
 #### Unified Representation
 * The challenge of multi-sensor fusion stems from the differences in the features captured by various sensors, such as cameras and LiDAR. Each sensor captures information from different viewpoints, making it difficult to align their features directly. Here's a breakdown of the challenges and why using the Bird's-Eye View (BEV) as a unified representation solves many of these issues:
@@ -105,22 +80,11 @@ Here’s an explanation of the methods used to optimize this transformation:
 
 1. Depth Distribution and Camera Feature Point Cloud
 The key challenge in camera-to-BEV transformation is the depth ambiguity for each pixel in the camera feature map. To address this:
-
-Each pixel’s depth distribution is explicitly predicted, rather than assuming a single depth value.
-
-The camera feature pixels are scattered along D discrete points along the camera ray, each weighted by their respective depth probability.
-
-This results in a 3D camera feature point cloud of size 
-𝑁×𝐻×𝑊×𝐷
-N×H×W×D, where:
-
-N: Number of cameras.
-
-H, W: Camera feature map size.
-
-D: Number of discrete depth values.
-
-The feature point cloud is quantized along the x, y axes with a specified step size (e.g., 0.4m), and the BEV pooling operation aggregates the features within each r × r BEV grid, flattening the features along the z-axis.
+    Each pixel’s depth distribution is explicitly predicted, rather than assuming a single depth value.
+    The camera feature pixels are scattered along D discrete points along the camera ray, each weighted by their respective depth probability.
+    This results in a 3D camera feature point cloud of size 𝑁×𝐻×𝑊×𝐷
+    N: Number of cameras.H, W: Camera feature map size.D: Number of discrete depth values.
+    The feature point cloud is quantized along the x, y axes with a specified step size (e.g., 0.4m), and the BEV pooling operation aggregates the features within each r × r BEV grid, flattening the features along the z-axis.
 
 2. Challenges with Existing BEV Pooling
 While the BEV pooling operation is conceptually simple, it is surprisingly inefficient and slow, taking over 500ms on an RTX 3090 GPU for a typical workload. This inefficiency arises because the camera feature point cloud is large and dense, with up to 2 million points generated for each frame, which is much denser than a LiDAR feature point cloud.
@@ -143,16 +107,11 @@ To improve the efficiency of BEV pooling, two key optimizations are introduced: 
 
 ##### Interval Reduction
     * After grid association, the next step is feature aggregation within each BEV grid using symmetric functions (e.g., mean, max, or sum).
-
     * Traditional methods, like the prefix sum, compute cumulative sums across all points, then subtract boundary values where indices change. This process requires tree reduction on the GPU, leading to inefficiencies due to unused partial sums.
-
     * Interval Reduction optimizes this by introducing a custom GPU kernel:
-
     * Each GPU thread is assigned to a specific BEV grid to calculate its interval sum and write the result directly.
-
     * This avoids multi-level tree reductions and unnecessary memory accesses, improving speed.
-
-As a result, the feature aggregation latency is reduced from 500ms to 2ms.
+    * As a result, the feature aggregation latency is reduced from 500ms to 2ms.
 
 4. Performance Improvements and Takeaways
     * With these optimizations, camera-to-BEV transformation becomes significantly faster:
@@ -164,35 +123,25 @@ As a result, the feature aggregation latency is reduced from 500ms to 2ms.
 Once all the sensory features (e.g., from LiDAR and cameras) are converted to a shared Bird's Eye View (BEV) representation, it becomes straightforward to fuse them together using elementwise operations, such as concatenation. However, there can still be spatial misalignments between the LiDAR and camera BEV features due to inaccuracies in depth estimation from the view transformer.
 
 1. Addressing Misalignments: Convolution-Based BEV Encoder
-To handle these misalignments, a convolution-based BEV encoder is employed. This encoder helps to align the features from different modalities (LiDAR and camera) by applying convolutional layers (sometimes with residual blocks). The convolutional layers allow for spatial corrections and adjustments, aligning the features from different sensory sources in the BEV space.
-
-The encoder smooths out the misalignments that might be introduced during the depth transformation, making the multi-modal features more compatible.
-
-The convolutional layers are typically designed to capture local patterns and spatial relations, which helps in compensating for the misaligned features between LiDAR and camera inputs.
+    * To handle these misalignments, a convolution-based BEV encoder is employed. This encoder helps to align the features from different modalities (LiDAR and camera) by applying convolutional layers (sometimes with residual blocks). The convolutional layers allow for spatial corrections and adjustments, aligning the features from different sensory sources in the BEV space.
+    * The encoder smooths out the misalignments that might be introduced during the depth transformation, making the multi-modal features more compatible.
+    * The convolutional layers are typically designed to capture local patterns and spatial relations, which helps in compensating for the misaligned features between LiDAR and camera inputs.
 
 2. Potential for Improvement with Accurate Depth Estimation
-The current method relies on the existing depth estimation from the view transformer, but it could benefit from more accurate depth estimation. For instance:
-
-Supervising the view transformer with groundtruth depth could improve the depth accuracy, which would, in turn, enhance the alignment of the sensory features in the BEV representation.
-
-This potential improvement is highlighted as future work to further refine the model.
+    * The current method relies on the existing depth estimation from the view transformer, but it could benefit from more accurate depth estimation. For instance:
+    * Supervising the view transformer with groundtruth depth could improve the depth accuracy, which would, in turn, enhance the alignment of the sensory features in the BEV representation.
+    * This potential improvement is highlighted as future work to further refine the model.
 
 #### Multi-Task Heads for 3D Perception Tasks
 After fusion, task-specific heads are applied to the fused BEV feature map to handle various 3D perception tasks. These tasks can include:
-
-3D Object Detection
-For 3D object detection, the method utilizes:
-
-Class-specific center heatmap heads to predict the center locations of all objects.
-
-Regression heads for estimating other properties of the objects, such as size, rotation, and velocity.
-
-Map Segmentation
-For map segmentation tasks, where categories may overlap (e.g., crosswalks as part of drivable spaces), the segmentation task is modeled as multiple binary semantic segmentation tasks, one for each class:
-
-Focal loss is used to train the segmentation heads, following the approach of CVT [8].
-
-By using multiple task-specific heads, the method is highly versatile and can address a range of different perception problems effectively.
+1. 3D Object Detection
+    For 3D object detection, the method utilizes:
+        * Class-specific center heatmap heads to predict the center locations of all objects.
+        * Regression heads for estimating other properties of the objects, such as size, rotation, and velocity.
+1. Map Segmentation
+    * For map segmentation tasks, where categories may overlap (e.g., crosswalks as part of drivable spaces), the segmentation task is modeled as multiple binary semantic segmentation tasks, one for each class:
+    * Focal loss is used to train the segmentation heads, following the approach of CVT [8].
+    * By using multiple task-specific heads, the method is highly versatile and can address a range of different perception problems effectively.
 
 ### Experiments
 #### Model
