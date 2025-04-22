@@ -2,7 +2,8 @@
 1. Github : [click here](https://github.com/mit-han-lab/bevfusion?tab=readme-ov-file)
 1. Paper : [click here](./resources/paper_2205.13542v3.pdf) 
 ## Prerequisites
-1. Point Cloud
+1. Point Cloud : [click here](./point_cloud.md)
+1. LiDAR : [click here](./lidar.md)
 ### Abstraction
 * Multi-sensor fusion is a process that combines data from multiple sensors to create a more complete, accurate, and reliable  understanding of an environment or system .
 * Cameras give rich color and texture information (semantic).
